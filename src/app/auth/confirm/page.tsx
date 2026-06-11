@@ -24,14 +24,6 @@ function AuthConfirmContent() {
         }
 
         const isUserAdmin = isAdmin(user.email)
-        const isAdminFlow = localStorage.getItem('temp_admin_login') === 'true'
-        localStorage.removeItem('temp_admin_login')
-
-        if (isAdminFlow && !isUserAdmin) {
-          setErrorMsg('This Google account is not registered as an administrator. Please log in as a normal user with your roll number.')
-          await supabase.auth.signOut()
-          return
-        }
 
         const next = searchParams.get('next') ?? (isUserAdmin ? '/admin' : '/dashboard')
 
@@ -73,13 +65,14 @@ function AuthConfirmContent() {
         }
 
         // Insert new user record
+        const tempFullName = localStorage.getItem('temp_full_name')
         const { error: insertError } = await supabase
           .from('users')
           .insert({
             id: user.id,
             email: user.email,
             roll_number: rollNumber,
-            display_name: user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
+            display_name: tempFullName || user.user_metadata?.full_name || user.email?.split('@')[0] || 'User',
             points: 0
           })
 
@@ -92,6 +85,7 @@ function AuthConfirmContent() {
 
         // Clean up
         localStorage.removeItem('temp_roll_number')
+        localStorage.removeItem('temp_full_name')
         setStatusText('Registration successful! Redirecting...')
         router.replace(next)
       } catch (err: any) {
